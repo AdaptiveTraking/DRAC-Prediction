@@ -6,10 +6,10 @@ from .api.detection import route as detection_route
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Perform any startup tasks here
-    print("Starting up the CV Parsing HR Assistant API...")
+    print("Starting up DRAC API...")
     yield
     # Perform any shutdown tasks here
-    print("Shutting down the CV Parsing HR Assistant API...")
+    print("Shutting down the DRAC API...")
 
 app = FastAPI(
     title="DRAC prediction API",
