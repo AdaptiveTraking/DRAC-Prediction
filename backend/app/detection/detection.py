@@ -14,7 +14,7 @@ class DroneDetector:
                     drone_detected.append({
                         'class': result.names[box.cls],
                         'confidence': box.conf.item(),
-                        'box': box.xyxy.cpu().numpy().tolist()
+                        'bbox': box.xyxy.cpu().numpy().tolist()
                     })
         return drone_detected
 
