@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 
-from .api.detection import route as detection_route
+from app.api.endpoints import router as detection_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,5 +18,4 @@ app = FastAPI(
 )
 
 app.root_path = "/api"
-
-app.include_router(detection_route, prefix="/detection", tags=["Detection"])
+app.include_router(detection_router, prefix="/drones", tags=["Detection"])
