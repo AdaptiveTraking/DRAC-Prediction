@@ -23,7 +23,7 @@ class AdaptiveTrajectoryGRU(nn.Module):
         self.fc = nn.Linear(hidden_size, horizon * output_features)
  
     def forward(self, x):
-        gru_out, hidden = self.gru(x)
+        _, hidden = self.gru(x)
         last_hidden = hidden[-1]
         out = self.fc(last_hidden)
         out = out.view(-1, self.horizon, self.output_features)

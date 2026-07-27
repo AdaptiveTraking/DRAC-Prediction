@@ -1,21 +1,55 @@
-from fastapi import FastAPI
-from fastapi.concurrency import asynccontextmanager
+import cv2
+from app.detection.detection import drone_detector
+from app.tracking.tracking import ClickToSelectTracker
+from app.prediction.trajectory_model import trajectory_inferencer
 
-from app.api.endpoints import router as detection_router
+cap = cv2.VideoCapture("./test/test2.mp4")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Perform any startup tasks here
-    print("Starting up DRAC API...")
-    yield
-    # Perform any shutdown tasks here
-    print("Shutting down the DRAC API...")
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-app = FastAPI(
-    title="DRAC prediction API",
-    version="1.0.0",
-    lifespan=lifespan
-)
+window_name = "Drone Tracking"
+cv2.namedWindow(window_name)
+tracker = ClickToSelectTracker(max_jump_distance=150)
+cv2.setMouseCallback(window_name, tracker.mouse_callback)
 
-app.root_path = "/api"
-app.include_router(detection_router, prefix="/drones", tags=["Detection"])
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    detections = drone_detector.detect(frame)
+
+    # draw every detection faintly so the user can see what's clickable
+    for d in detections:
+        x1, y1, x2, y2 = d['bbox']
+        cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 150, 0), 1)
+
+    target = tracker.select(detections)
+
+    if target is None:
+        cv2.putText(frame, "Click a box to track", (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+    
+    else:
+        bbox = target['bbox']
+        cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 255, 0), 2)
+        cv2.putText(frame, f"{target['class']} {target['confidence']:.2f}", (int(bbox[0]), int(bbox[1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        future_bboxes = trajectory_inferencer.update_and_predict(
+            bbox[0], bbox[1], bbox[2], bbox[3], t=cap.get(cv2.CAP_PROP_POS_MSEC)
+        )
+        if future_bboxes is not None:
+            for future_bbox in future_bboxes:
+                cv2.rectangle(frame, (int(future_bbox[0]), int(future_bbox[1])), (int(future_bbox[2]), int(future_bbox[3])), (255, 0, 0), 2)
+                cv2.putText(frame, "Predicted", (int(future_bbox[0]), int(future_bbox[1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+
+    cv2.imshow(window_name, frame)
+    key = cv2.waitKey(1) & 0xFF
+
+    if key == ord('q'):
+        break
+    elif key == ord('r'):
+        tracker.release()  # let the user click a different target
+
+cap.release()
+cv2.destroyAllWindows()
