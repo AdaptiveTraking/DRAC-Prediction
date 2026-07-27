@@ -54,3 +54,46 @@ class AdaptiveTrajectoryGRU(nn.Module):
             total_loss += step_loss
             
         return total_loss / self.horizon
+
+
+class TrajectoryInferencer:
+    def __init__(self, model, sequence_length=10):
+        self.model = model
+        self.model.eval() # Set model to evaluation mode
+        self.sequence_length = sequence_length
+        self.buffer = deque(maxlen=sequence_length)
+        self.last_x = None
+        self.last_y = None
+        self.last_t = None
+
+    def update_and_predict(self, x, y, t):
+        """
+        Takes raw (x, y, t) from detection, computes physics, updates buffer, 
+        and returns predictions if the buffer is full.
+        """
+        if self.last_t is None:
+            self.last_x, self.last_y, self.last_t = x, y, t
+            # Pad with 0 velocity for the first frame
+            self.buffer.append([x, y, 0.0, 0.0, 0.0])
+            return None 
+
+        dt = t - self.last_t
+        if dt > 0:
+            vx = (x - self.last_x) / dt
+            vy = (y - self.last_y) / dt
+        else:
+            vx, vy = 0.0, 0.0
+            
+        self.buffer.append([x, y, dt, vx, vy])
+        
+        self.last_x, self.last_y, self.last_t = x, y, t
+
+        if len(self.buffer) == self.sequence_length:
+            input_tensor = torch.tensor(list(self.buffer), dtype=torch.float32).unsqueeze(0)
+            
+            with torch.no_grad():
+                predictions = self.model(input_tensor)
+                
+            return predictions.squeeze(0).numpy() 
+            
+        return None
