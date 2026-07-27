@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 
-from app.api.endpoints import router as detection_router
+from backend.app.api.endpoints import router as detection_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

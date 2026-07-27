@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from app.detection.detection import drone_detector
-from app.prediction.trajectory_model import trajectory_inferencer
+from backend.app.detection.detection import drone_detector
+from backend.app.prediction.trajectory_model import trajectory_inferencer
 
 router = APIRouter()
 
