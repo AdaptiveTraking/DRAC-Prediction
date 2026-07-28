@@ -35,13 +35,17 @@ while True:
         cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 255, 0), 2)
         cv2.putText(frame, f"{target['class']} {target['confidence']:.2f}", (int(bbox[0]), int(bbox[1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-        future_bboxes = trajectory_inferencer.update_and_predict(
-            bbox[0], bbox[1], bbox[2], bbox[3], t=cap.get(cv2.CAP_PROP_POS_MSEC)
+        future_positions = trajectory_inferencer.update_and_predict(
+            bbox[0], bbox[1], bbox[2], bbox[3], t=cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
         )
-        if future_bboxes is not None:
-            for future_bbox in future_bboxes:
-                cv2.rectangle(frame, (int(future_bbox[0]), int(future_bbox[1])), (int(future_bbox[2]), int(future_bbox[3])), (255, 0, 0), 2)
-                cv2.putText(frame, "Predicted", (int(future_bbox[0]), int(future_bbox[1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+        print(future_positions)
+
+        if future_positions is not None:  # each row: (x, y, vx, vy)
+            HORIZONS = [1, 2, 4, 8, 16]
+            for h, (x, y, vx, vy) in zip(HORIZONS, future_positions):
+                center = (int(x), int(y))
+                cv2.circle(frame, center, 6, (255, 0, 0), -1)
+                cv2.putText(frame, f"+{h}", (center[0] + 10, center[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
     cv2.imshow(window_name, frame)
     key = cv2.waitKey(1) & 0xFF
