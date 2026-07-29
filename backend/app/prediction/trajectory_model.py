@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 from collections import deque
 import numpy as np
+from pathlib import Path
 
 
 class AdaptiveTrajectoryGRU(nn.Module):
@@ -150,9 +151,15 @@ class TrajectoryInferencer:
 
         return None
 
-model_gru = AdaptiveTrajectoryGRU.load(weights_path="models/prediction/adaptive_trajectory_gru.pt")
 
-stats = np.load("models/prediction/norm_stats.npy")
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+PREDICTION_MODEL_DIR = BACKEND_ROOT / "models" / "prediction"
+
+model_gru = AdaptiveTrajectoryGRU.load(
+    weights_path=PREDICTION_MODEL_DIR / "adaptive_trajectory_gru.pt"
+)
+
+stats = np.load(PREDICTION_MODEL_DIR / "norm_stats.npy")
 feat_mean, feat_std = stats[0], stats[1]
 
 trajectory_inferencer = TrajectoryInferencer(model=model_gru, feat_mean=feat_mean, feat_std=feat_std)

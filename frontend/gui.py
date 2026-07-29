@@ -1,5 +1,6 @@
 import base64
 import multiprocessing as mp
+import sys
 import time
 import tkinter as tk
 from pathlib import Path
@@ -8,12 +9,28 @@ from tkinter import ttk
 
 import cv2 as cv
 
-try:
-    from frontend.detection_process import run_detector
-    from frontend.tracking import ClickToSelectTracker
-except ImportError:
-    from detection_process import run_detector
-    from tracking import ClickToSelectTracker
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+FRONTEND_ROOT = Path(__file__).resolve().parent
+
+for path in (PROJECT_ROOT, FRONTEND_ROOT):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
+
+from detection_process import run_detector
+from tracking import ClickToSelectTracker
+
+
+def load_trajectory_inferencer():
+    """
+    Load the trajectory inferencer only when the GUI object is created.
+
+    On Windows, multiprocessing spawn imports this module in child processes.
+    Keeping this import out of module scope prevents detector workers from also
+    loading the prediction model.
+    """
+    from backend.app.prediction.trajectory_model import trajectory_inferencer
+
+    return trajectory_inferencer
 
 
 class Gui:
@@ -53,10 +70,11 @@ class Gui:
         self.stop_event = self.mp_context.Event()
         self.detector_process = None
 
-        model_path = Path(__file__).resolve().parents[1] / "backend" / "models" / "detection" / "best.pt"
+        model_path = PROJECT_ROOT / "backend" / "models" / "detection" / "best.pt"
         self.start_detector_process(str(model_path))
 
         self.tracker = ClickToSelectTracker(max_jump_distance=150)
+        self.trajectory_inferencer = load_trajectory_inferencer()
 
         # frame_id identifies which displayed frame was sent to detection.
         # detections holds the newest completed worker result. These boxes may
@@ -157,10 +175,15 @@ class Gui:
             frame = self.resize_frame(frame)
             self.frame_id += 1
 
+
             self.send_frame_to_detector(frame)
             self.read_detector_results()
 
             target = self.tracker.select(self.detections)
+
+            if target is not None:
+                self.draw_predictions(frame, target)
+
             positions = self.draw_detections(frame, self.detections, target)
 
             self.update_drone_info(len(self.detections), positions, self.latest_result)
@@ -281,6 +304,41 @@ class Gui:
         )
 
         return positions
+
+    def draw_predictions(self, frame, target):
+        """
+        Update the trajectory model with the selected target and draw predictions.
+        """
+        bbox = self.get_bbox(target)
+
+        if bbox is None:
+            return
+
+        future_positions = self.trajectory_inferencer.update_and_predict(
+            bbox[0],
+            bbox[1],
+            bbox[2],
+            bbox[3],
+            t=time.perf_counter(),
+        )
+
+        if future_positions is None:
+            return
+
+        horizons = [1, 2, 4, 8, 16]
+
+        for horizon, (x, y, vx, vy) in zip(horizons, future_positions):
+            center = (int(x), int(y))
+            cv.circle(frame, center, 6, (255, 0, 0), -1)
+            cv.putText(
+                frame,
+                f"+{horizon}",
+                (center[0] + 10, center[1] - 10),
+                cv.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255, 0, 0),
+                2,
+            )
 
     def resize_frame(self, frame):
         """

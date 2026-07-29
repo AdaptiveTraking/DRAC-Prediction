@@ -1,4 +1,5 @@
 from ultralytics import YOLO
+from pathlib import Path
 
 class DroneDetector:
     def __init__(self, model_path: str):
@@ -19,4 +20,6 @@ class DroneDetector:
         return drone_detected
 
 if __name__ == '__main__':
-    drone_detector = DroneDetector(model_path='models/detection/best.pt')
+    backend_root = Path(__file__).resolve().parents[2]
+    model_path = backend_root / "models" / "detection" / "best.pt"
+    drone_detector = DroneDetector(model_path=str(model_path))
