@@ -41,7 +41,7 @@ while True:
         print(future_positions)
 
         if future_positions is not None:  # each row: (x, y, vx, vy)
-            HORIZONS = [1, 2, 4, 8, 16]
+            HORIZONS = [1, 2, 3, 5, 8]
             for h, (x, y, vx, vy) in zip(HORIZONS, future_positions):
                 center = (int(x), int(y))
                 cv2.circle(frame, center, 6, (255, 0, 0), -1)
