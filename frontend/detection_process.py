@@ -1,9 +1,5 @@
 """
 Background process entry point for CPU drone detection.
-
-The GUI should stay responsive even when YOLO inference is slow. This module is
-kept separate from gui.py so Windows multiprocessing can import a small, clear
-worker function in the child process.
 """
 
 import sys

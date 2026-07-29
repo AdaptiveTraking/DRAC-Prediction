@@ -4,11 +4,6 @@ import cv2
 class ClickToSelectTracker:
     """
     Keeps track of one user-selected drone detection across frames.
-
-    The detector may return many boxes per frame, but the prediction step should
-    normally follow one target. This class separates that selection logic from
-    the GUI: the GUI only sends clicks and detections, while the tracker decides
-    which detection is currently the active target.
     """
 
     def __init__(self, max_jump_distance=150):
@@ -29,10 +24,6 @@ class ClickToSelectTracker:
     def set_click(self, x, y):
         """
         Store a click location until the next call to select().
-
-        The GUI receives mouse events immediately, but detections are processed
-        frame by frame. Keeping the click as pending lets select() compare the
-        click against the latest available detection boxes in one place.
         """
         self.pending_click = (x, y)
 
@@ -90,9 +81,6 @@ class ClickToSelectTracker:
         def distance(detection):
             """
             Measure how far a detection is from the last target position.
-
-            The center point is used because it is stable even if box width and
-            height change slightly between detections.
             """
             x1, y1, x2, y2 = self.get_bbox(detection)
             cx = (x1 + x2) / 2
