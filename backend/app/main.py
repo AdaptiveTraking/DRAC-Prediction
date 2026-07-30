@@ -1,7 +1,7 @@
 import cv2
-from backend.app.detection.detection import drone_detector
-from backend.app.tracking.tracking import ClickToSelectTracker
-from backend.app.prediction.trajectory_model import trajectory_inferencer
+from app.detection.detection import drone_detector
+from app.tracking.tracking import ClickToSelectTracker
+from app.prediction.trajectory_model import trajectory_inferencer
 
 cap = cv2.VideoCapture("./test/test2.mp4")
 
