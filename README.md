@@ -31,6 +31,38 @@ Video Source (webcam / file / stream)
 
 The trajectory model (`AdaptiveTrajectoryGRU`) takes a window of the last `N` frames and outputs predicted `(x, y, vx, vy)` at each of several future horizons in a single forward pass, avoiding compounding prediction error at longer horizons.
 
+### Formulation
+ 
+At frame $t$, the detector + tracker produce a bounding box center position $\mathbf{p}_t = (x_t, y_t)$. Instantaneous velocity is estimated via finite differences over the frame interval $\Delta t$:
+ 
+$$
+\mathbf{v}_t = \frac{\mathbf{p}_t - \mathbf{p}_{t-1}}{\Delta t}
+$$
+ 
+The model input is a history window of the last $N$ frames, where each timestep is a state vector combining position and velocity:
+ 
+$$
+\mathbf{s}_t = (x_t,\ y_t,\ v_{x,t},\ v_{y,t}) \in \mathbb{R}^4
+$$
+ 
+$$
+X_t = (\mathbf{s}_{t-N+1}, \mathbf{s}_{t-N+2}, \dots, \mathbf{s}_t) \in \mathbb{R}^{N \times 4}
+$$
+ 
+This window is passed through a GRU encoder, producing a hidden state $\mathbf{h}_t$ that summarizes recent motion:
+ 
+$$
+\mathbf{h}_t = \text{GRU}(X_t)
+$$
+ 
+Rather than autoregressively rolling the model forward one step at a time (which compounds error at each step), $\mathbf{h}_t$ is passed through a set of horizon-specific output heads, each predicting the full state directly at a fixed future offset $k \in \mathcal{K} = \{1, 2, 4, 8, 16\}$:
+ 
+$$
+\hat{\mathbf{s}}_{t+k} = f_k(\mathbf{h}_t), \quad \forall k \in \mathcal{K}
+$$
+ 
+All horizons are predicted in a single forward pass, so a bad prediction at $+1$ frame doesn't propagate into the $+16$ frame estimate.
+
 ## Dataset
 
 Training data consists of per-frame drone center positions with timestamps, in the schema:
