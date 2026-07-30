@@ -6,6 +6,8 @@ import sys
 import time
 from pathlib import Path
 from queue import Empty, Full
+from backend.app.detection.detection import drone_detector
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -37,9 +39,8 @@ def run_detector(frame_queue, result_queue, stop_event, model_path, torch_thread
     limit_torch_threads(torch_threads)
 
     try:
-        from backend.app.detection.detection import DroneDetector
 
-        detector = DroneDetector(model_path=model_path)
+        detector = drone_detector
     except Exception as exc:
         put_latest(
             result_queue,

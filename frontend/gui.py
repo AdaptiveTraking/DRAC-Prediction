@@ -53,7 +53,7 @@ class Gui:
         # Display settings. refresh_ms controls how often Tkinter asks for the next frame
         # preview_width/height limit the frame size shown in the GUI.
         self.camera_index = camera_index
-        self.refresh_ms = 2
+        self.refresh_ms = 1
         self.preview_width = 860
         self.preview_height = 520
 
@@ -451,5 +451,5 @@ class Gui:
 
 if __name__ == "__main__":
     mp.freeze_support()
-    gui = Gui()
+    gui = Gui("./../backend/test/test2.mp4")
     gui.run()
