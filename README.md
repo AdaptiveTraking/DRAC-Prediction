@@ -13,11 +13,15 @@ DRAC-Prediction is a pipeline for detecting a drone in video and predicting it's
 
 ## Table of Contents
 
+- [Demo](#demo)
 - [Architecture](#architecture)
 - [Dataset](#dataset)
 - [Results](#results)
   - [Detection](#detection)
   - [Trajectory Prediction](#trajectory-prediction)
+
+## Demo
+<img src="media/DRAC-DEMO.gif" width="600" style="display: block; margin-left: auto; margin-right: auto;">
 
 ## Architecture
 
